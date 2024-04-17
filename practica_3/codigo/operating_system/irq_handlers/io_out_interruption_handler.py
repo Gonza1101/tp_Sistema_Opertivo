@@ -11,19 +11,20 @@ class IoOutInterruptionHandler(AbstractInterruptionHandler):
         We need to put it in WAITING state and set next process to RUNNING.
         """
         # The device that was requested for use
-        device = irq.arguments[0]
+        device_id = irq.arguments[0]
         # TODO: (4)
         # The first step is to retrieve the process id of the process that
         # was currently using the device. We can achieve this trough the
         # io controller of the device.
         
-        io_controller = self._kernel.io_controller_vector.get_by_id(device)
+        io_controller = self._kernel.io_controllers_vector.get_by_id(device_id)
         active_pid = io_controller.active_pid()
         
         # The request for the device has finished. So we need to inform
         # the corresponding controller for that device, so the process
         # can be removed from te queue, and the next process in the
         # queue, if any, sends the request to the device.
+        
         io_controller.finish()
         # Now we need to inform the scheduler that the process
         # that was using the device is no longer waiting, but
@@ -33,6 +34,6 @@ class IoOutInterruptionHandler(AbstractInterruptionHandler):
         # in the ready queue, it may happen that it also needs to be run,
         # the last step is to tell the scheduler to run the next process
         # in the ready queue, if any.
-        HARDWARE.interrupt_vector.handle(IRQ.DISPATCH())
+        HARDWARE.interrupt_vector.handle(IRQ.DISPATCH(preemptive=False))
         #self._kernel.scheduler.move_to_running(active_pid)
         

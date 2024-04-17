@@ -21,7 +21,8 @@ class Dispatcher:
         # to the corresponding registries in the CPU, so next tick will
         # run the process the PCB represents.
         pcb_pc = pcb.pc
-        HARDWARE.cpu.pc(pcb_pc)
+        
+        HARDWARE.cpu.pc = pcb_pc
         
     
 
@@ -35,6 +36,8 @@ class Dispatcher:
 
         # This occurrs on a context switch, so after this step, the CPU
         # should be put as IDLE, not running anything.
-        pcb.pc(HARDWARE.cpu.pc)
+        
+        pcb.pc = HARDWARE.cpu.pc
+        
            
 

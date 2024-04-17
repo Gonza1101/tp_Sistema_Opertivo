@@ -16,16 +16,16 @@ class IoInInterruptionHandler(AbstractInterruptionHandler):
         # The current process needs to be changed to waiting state,
         # and the request be dispatched.
         # First we need to get the currently running process id
-        pid = self._kernel.scheduler.currently_running_pid()
+        pid = self._kernel.scheduler.currently_running_pid
         # Next, we have to move the process to waiting state
-        self._kernel.sceduler.move_to_waiting(pid)
+        self._kernel.scheduler.move_to_waiting(pid)
         # After the process is in waiting state, we need to send the
         # request to the corresponding IO controller.
-        io_controller = self._kernel.io_controller_vector.get_by_id(device)
+        io_controller = self._kernel.io_controllers_vector.get_by_id(device)
         io_controller.request(pid)
         # As the currently running process is now in waiting state,
         # the last step is to tell the scheduler to run the next process
-        next_pcb = self.kernel.scheduler.next_process()
+             #next_pcb = self.kernel.scheduler.next_process deprecated
         HARDWARE.interrupt_vector.handle(IRQ.DISPATCH(preemptive=False))
         #if not next_pcb is None:
         #    self._kernel.scheduler.move_to_running(next_pcb)

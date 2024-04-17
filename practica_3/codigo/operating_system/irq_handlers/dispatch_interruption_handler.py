@@ -13,9 +13,12 @@ class DispatchInterruptionHandler(AbstractInterruptionHandler):
         # TODO: (6)
         # As we have The next process in the ready state should be moved
         # to the running state.
+        
         next_process = self._kernel.scheduler.next_process
         
-        if preemptive is False and pid is None:
+        if next_process is None :
+            HARDWARE.cpu.pc=-1
+        elif preemptive is False and pid is None:
            self._kernel.scheduler.move_to_running(next_process)
         else :
             HARDWARE.interrupt_vector.handle(IRQ.SWAP())

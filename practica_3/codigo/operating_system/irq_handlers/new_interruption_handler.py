@@ -21,4 +21,6 @@ class NewInterruptionHandler(AbstractInterruptionHandler):
         # If there is no process running, most likely there is no
         # other process to execute, so move the next process to the
         # running state
-        HARDWARE.interrupt_vector.handle(IRQ.DISPATCH(preemptive=False))
+        current_process = self._kernel.scheduler.currently_running_pid
+        if current_process is None :
+            HARDWARE.interrupt_vector.handle(IRQ.DISPATCH(preemptive=False))

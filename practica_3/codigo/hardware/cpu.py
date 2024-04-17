@@ -19,7 +19,6 @@ class Cpu():
         self.__interrupt_vector = interrupt_vector
         self.__number_of_io_devices = number_of_io_devices
         # Registries
-        self.__idle = False
         self.__pc = -1
         self.__ir = ASM.NOOP()
 
@@ -46,7 +45,7 @@ class Cpu():
     @property
     def is_idle(self):
         """Answers if the CPU is idle. If the PC is -1, is idle"""
-        return self.__idle #self.__pc == -1
+        return self.__pc == -1
 
     def tick(self, tick_number):
         """Emulate a tick of the clock, performing the FDE cycle"""
