@@ -1,4 +1,0 @@
-IO
-IO
-CPU
-EXIT

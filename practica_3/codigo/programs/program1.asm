@@ -1,4 +1,0 @@
-CPU
-CPU
-CPU
-EXIT
