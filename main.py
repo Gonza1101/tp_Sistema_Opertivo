@@ -1,204 +1,227 @@
 #!/usr/bin/env python3
-import cmd
-from time import sleep
+import traceback
+from cmd import Cmd
+
+from history import History
 
 from utilities.printer import Printer
 from utilities.compiler import Compiler
 
 from hardware.hardware import HARDWARE
-from hardware.asm import ASM
 
 from operating_system.kernel import Kernel
 
-
-# from os.kernel import Kernel
-
-# This class uses some python reflection in order to load the programs.
-# Aside from the available_programs and get_program, any other method
-# that does not start with __ is considered a program, and attempted
-# to be compiled once the instance is created. Add as many programs
-# as you want.
-class SoftwarePrograms:
-    """
-    A simple holder class for all your program. This is ued by the CLI
-    when searching for a program by name.
-    """
-    def __init__(self):
-        self._programs = dict()
-        # Python magic (Gets all the defined method of this class to iterate)
-        for prog in [p for p in self.__class__.__dict__.keys() if not self.__is_ignored_pattern__(p)]:
-            self._programs[prog] = Compiler.compile(prog, getattr(self, prog)())
-
-    def __is_ignored_pattern__(self, name):
-        return (
-            name[0:2] == "__" or
-            name == "available_programs" or
-            name == "get_program"
-        )
-
-    def available_programs(self):
-        """Return all the available program names"""
-        return self._programs.keys()
-
-    def get_program(self, program_name):
-        """Return a program based on the name"""
-        return self._programs[program_name]
-
-    def program1(self):
-        return [
-            ASM.CPU(1),
-            ASM.IO(1),
-            ASM.CPU(3)
-        ]
-
-    def program2(self):
-        return [
-            ASM.CPU(3),
-            ASM.IO(2),
-            ASM.CPU(1)
-        ]
-
-
-# Now this main file has been converted to a CLI application.
-# You can run commands that will allow you to manage the
-# application, as well as having a constant monitoring on your
-# hardware state (CPU and memory).
-# Each method tarting with do_ is a valid command and the preloop works
-# as an initialization. You may change the default initialization values
-# in preloop if you might.
-# You should not feel the need to modify this, but this class works in tandem
-# with the programs class, so you may modify that one to change the programs
-# you want to have at hand.
-class HardwareManagementCLIApp(cmd.Cmd):
+class HardwareManagementCLIApp(Cmd):
 
     ############### HARDWARE CONFIGURATION AND BEHAVIOR ########################
-
-    _memory_size=20
-    _clock_speed=0.5
-    _showing_ticks = False
-    _start_in_turbo_mode=True
-
+    _memory_size=30
+    _clock_speed=1
+    _io_device_timings=[1, 2]
     ############### END HARDWARE CONFIGURATION AND BEHAVIOR ########################
 
+    ############### OS CONFIGURATION AND BEHAVIOR ########################
+    _scheduler_algorithm='FPPS'
+    _quantum=1
+    ############### END OS CONFIGURATION AND BEHAVIOR ########################
+
+    ############### MANAGER CONFIGURATION AND BEHAVIOR ########################
+    _showing_ticks = False
+    _start_in_turbo_mode=True
+    # Automatically run tests at startup
+    _automatically_run__tests=[2]
+    # If none, print to console, else, print the
+    # output to a file
+    _history_output_file='out.txt'
+    ############### END MANAGER CONFIGURATION AND BEHAVIOR ########################
 
     ############### CLI APP CONFIGURATION ########################
 
     prompt = "Hardware >> "
     intro = "Welcome to the hardware manager. Type 'help' for available commands."
-    _programs = SoftwarePrograms()
-    _os = None
+    os = None
+    history = None
 
     def preloop(self):
         """
         This method is executed before starting the application,
         so it"s used to initialize all elements.
         """
+
+        # Initialize the Printer
         Printer.initialize()
-        HARDWARE.setup(memorySize=self._memory_size, clockSpeed=self._clock_speed)
-        self._os = Kernel()
+
+        # Initialize the hardware
+        HARDWARE.setup(
+            memory_size=self._memory_size,
+            clock_speed=self._clock_speed,
+            device_timings= self._io_device_timings
+        )
+
+        # Initialize the Operating System
+        self.os = Kernel(scheduling_strategy=self._scheduler_algorithm, quantum=self._quantum)
+
+        # The history helps us in visualizing how the
+        # execution happened, is not part of the hardware nor
+        # the os, but just a mean to print data over time
+        self.history = History(self.os)
+
         # We subscribe, in order to print after every tick the
         # hardware status.
-        HARDWARE.clock.addSubscriber(self)
+        HARDWARE.clock.add_subscriber(self)
+
         # Adjust speed if starting in turbo mode
         if (self._start_in_turbo_mode):
-            HARDWARE.clock._speed = 0
-        # Show available programs.
-        Printer.show("Available programs are:")
-        for prog in self._programs.available_programs():
-            Printer.show(self._programs.get_program(prog))
+            HARDWARE.clock.overclock()
+        for test in self._automatically_run__tests:
+            self.__class__.__dict__['test_' + str(test)].__call__(self)
 
-    def do_quit(self, line):
-        """Exit the application."""
+    def test_1(self):
+        self.do_load('cpu_long')
+        self.do_tick(4)
+        self.do_load('cpu_short')
+        self.do_tick(1)
+        self.do_load('cpu_medium')
+        self.do_tick(4)
+        self.do_load('cpu_short')
+        self.do_tick(25)
+        self.do_history()
+        
+    def test_2(self):
+        self.do_load('p1', 2)
+        self.do_tick(2)
+        self.do_load('p2', 3)
+        self.do_tick(2)
+        self.do_load('p3', 3)
+        self.do_tick(2)
+        self.do_load('p4', 4)
+        self.do_tick(2)
+        self.do_load('p5', 1)
+        self.do_tick(12)
+        self.do_history()
+        
+    def do_quit(self, line = None):
+        """ Exit the application. """
         return True
 
     ############### END CLI APP CONFIGURATION ########################
 
     ############### MANIPULATE HARDWARE ########################
 
-    def do_on(self, line):
-        """Turn ON the computer."""
+    def do_on(self, line = None):
+        """ Turn ON the computer. """
         Printer.show(" ---- TURNING COMPUTER ON ---- ")
-        HARDWARE.turnOn()
+        HARDWARE.turn_on()
 
-    def do_off(self, line):
-        """Turn OFF the computer."""
-        HARDWARE.turnOff()
+    def do_off(self, line = None):
+        """ Turn OFF the computer. """
+        HARDWARE.turn_off()
         Printer.show(" ---- TURNING COMPUTER OFF ---- ")
 
-    def do_turbo_on(self, line):
-        """Turn ON turbo mode."""
+    def do_turbo_on(self, line = None):
+        """ Turn ON turbo mode. """
         # Turbo sets the speed of the clock to immediate mode,
         # this is usefull when running ticks manually for debugging
-        HARDWARE.clock._speed = 0
+        HARDWARE.clock.overclock()
         Printer.show(" ---- STARTING TURBO MODE ---- ")
 
-    def do_turbo_off(self, line):
-        """Turn OFF turbo mode."""
+    def do_turbo_off(self, line = None):
+        """ Turn OFF turbo mode. """
         # Set the speed back to original value
-        HARDWARE.clock._speed = 1 / self._clock_speed
+        HARDWARE.clock.reset()
         Printer.show(" ---- ENDING TURBO MODE ---- ")
 
-    def do_status(self, line):
-        """Show the hardware status"""
-        os_config = Printer.tabulated([["No configuration yet"]],
-                                    headers=["Configuration"])
-        os_proctable = Printer.tabulated([[self._os.pct]],
-                                    headers=["PID", "PCB"])
-        os_data = os_config + "\n\n" + os_proctable
-        data = Printer.tabulated([[HARDWARE.cpu, HARDWARE.memory, os_data]],
-            headers=["CPU", "Memory", "Operating System"],
+    def do_status(self, line = None):
+        """ Show the hardware status. """
+        data = Printer.tabulated([[HARDWARE, self.os]],
+            headers=["Hardware", "Operating System"],
             numalign="center", stralign="left"
         )
         Printer.show(data)
+
+    def do_history(self, line = None):
+        """ Show the hardware status. """
+        if self._history_output_file is None:
+            Printer.show(self.history)
+        else:
+            f = open(self._history_output_file, 'w', encoding='utf-8')
+            f.write(self.history.to_string())
+            f.close()
 
     ############### END MANIPULATE HARDWARE ########################
 
 
     ############### SIMULATE TICKING ########################
 
-    def do_tick(self, line):
-        """Run a clock"s tick, even if computer is off."""
+    def do_tick(self, line = 1):
+        """
+        Run a clock"s tick, even if computer is off.
+        Useful for debugging only.
+        """
         ticks = 1
-        # If the user passes as integer, perform that many ticks
-        if (line != "" and line.isdigit()):
+
+        if (type(line) == str and line != "" and line.isdigit()):
             ticks = int(line)
+        elif (type(line) == int):
+            ticks = line
+
         for _ in range(ticks):
             HARDWARE.clock.tick()
 
-    def do_show_ticks(self, line):
-        """Show the hardware status"""
+    def do_show_ticks(self, line = None):
+        """ Show the hardware status. """
         self._showing_ticks = True
 
-    def do_hide_ticks(self, line):
-        """Show the hardware status"""
+    def do_hide_ticks(self, line = None):
+        """ Show the hardware status. """
         self._showing_ticks = False
 
-    def tick(self, tickNbr):
+    def tick(self, tick_number):
+        """
+        React to a tick of the clock.
+        Only useful to print the status in each tick
+        and see in real time what changes.
+        """
         if (self._showing_ticks):
-            Printer.show("        --------------- tick: {tickNbr} ---------------".format(tickNbr = tickNbr))
+            Printer.show("        --------------- tick: {tick_number} ---------------".format(tick_number = tick_number))
             self.do_status("")
 
     ############### END SIMULATE TICKING ########################
 
 
     ############### LOAD PROGRAMS ########################
-
-    def do_load(self, line):
-        """Load a program from the ones in SoftwarePrograms"""
+    def do_load(self, line = None, withPriority = 3):
+        """ Load a program from the ones in the programs folder. """
         try:
-            prog = self._programs.get_program(line)
-            self._os.create_process(prog)
-            # Here we should tell the OS to load our program
-            # For now, and for testing purposes, just
-            # load the instructions in memory (But here is
-            # where the OS should kick in)
-        except KeyError:
-            Printer.error("No program with the name: " + line)
+            # Check if priority is hidden there in input
+            filenameAndPriority = line.split(' ')
+            # Get the filename
+            filename = filenameAndPriority[0].strip()
+            # Get the filename
+            priority = (
+                int(filenameAndPriority[1].strip())
+                if len(filenameAndPriority) > 1
+                else withPriority
+            )
+            if not filename.endswith('.asm'):
+                filename += '.asm'
+            # Open a file with such name from the programs folder
+            file_handle = open('./programs/' + filename)
+            # Read the contents, removing extra spaces and empty lines or comments
+            contents = [line.strip() for line in file_handle.readlines()
+                        if line.strip() != "" and not line.strip().startswith("#")]
+            #
+            program = Compiler.compile(filename, contents)
+            self.os.load_program(program, priority)
+        except FileNotFoundError:
+            Printer.error("No program with the name: " + line + "in the ./programs folder.")
+        except SyntaxError:
+            Printer.error("The program " + line + " contains invalid ASM commands.")
+        except Exception as e:
+            Printer.error("ERROR: " + str(e))
+            Printer.error(traceback.format_exc())
+  
 
-    def do_kill(self,pid):
-        self._os.kill_process(pid)
-        
-    ############### END LOAD PROGRAMS ########################
+############### END LOAD PROGRAMS ########################
 
 if __name__ == "__main__":
     HardwareManagementCLIApp().cmdloop()

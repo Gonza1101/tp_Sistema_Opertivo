@@ -386,7 +386,6 @@ multiline_formats = {
         "rst": "rst",
 }
 
-# TODO: Add multiline support for the remaining table formats:
 #       - mediawiki: Replace \n with <br>
 #       - moinmoin: TBD
 #       - youtrack: TBD
@@ -663,7 +662,6 @@ def _align_column(strings, alignment, minwidth=0,
 
     s_widths = list(map(width_fn, strings))
     maxwidth = max(max(s_widths), minwidth)
-    # TODO: refactor column alignment in single-line and multiline modes
     if is_multiline:
         if not enable_widechars and not has_invisible:
             padded_strings = [
