@@ -1,5 +1,9 @@
 from hardware.hardware import HARDWARE
 
+from operating_system.allocation.bf_allocation import BestfitAllocationAlgorithm
+from operating_system.allocation.ff_allocation import FirstFitAllocationAlgorithm
+from operating_system.allocation.wf_allocation import WorstFitAllocationAlgorithm
+
 class Loader:
     """
     The loader is in charge of loading programs into memory.
@@ -9,24 +13,34 @@ class Loader:
     unloaded, the freed memory cannot be used back, yikes.
     """
 
-    def __init__(self, kernel):
+    def __init__(self, kernel, allocation_algorithm):
         self.__kernel = kernel
-        self.__next_free_memory_addr = 0
-
+        self.__available_continuous_allocation_algorithms = {
+            'FF' : FirstFitAllocationAlgorithm()
+           #'BF' : BestFitAllocationAlgorithm(),
+            #'WF' : WorstFitAllocationAlgorithm()
+        }
+        self.__current_allocation_algorithm_name = allocation_algorithm
+        self.__current_allocation_algorithm = self.__available_continuous_allocation_algorithms[allocation_algorithm]
+    @property
+    def current_allocation_algorithm_name(self):
+        return self.__current_allocation_algorithm_name
+    
+    @property
+    def current_allocation_algorithm(self):
+        return self.__available_continuous_allocation_algorithms
+    
     def load(self, data):
         """
         Load a given program data into memory. Return the location
         where the first instruction was allocated.
         Fails if there is not enough free contiguous memory.
         """
-        if not self.__has_free_memory(len(data)):
+        if not self.has_free_memory(len(data)):
             raise RuntimeError("Not enough free memory.")
-
-        memory_location = self.__next_free_memory_addr
-        for i in range(0, len(data)):
-            HARDWARE.memory.write(memory_location + i, data[i])
-        self.__next_free_memory_addr += len(data)
-        return memory_location
+        #print(self.has_free_memory(len(data)))
+        return self.__current_allocation_algorithm.load(data)
+        
 
     def unload(self, pcb):
         """
@@ -34,13 +48,14 @@ class Loader:
         The PCB is received and used to know where the program is
         stored in memory.
         """
-        for i in range(pcb.memory_start, pcb.memory_end):
-            HARDWARE.memory.write(i, '')
+        self.__current_allocation_algorithm.unload(pcb)
+        
 
-    def __has_free_memory(self, size):
+    def has_free_memory(self, size):
         """ Answer if there is enough free contiguous memory to store some data. """
-        return self.__free_memory() >= size
+        return self.__current_allocation_algorithm.has_free_memory(size)
 
     def __free_memory(self):
         """ Returns the amount of free contiguous memory. """
-        return HARDWARE.memory.size - self.__next_free_memory_addr
+        
+        return self.__current_allocation_algorithm.free_memory()

@@ -1,6 +1,7 @@
 from utilities.printer import Printer
 
 from hardware.memory import Memory
+from hardware.mmu import MMU
 from hardware.cpu import Cpu
 from hardware.io_device import IODevice
 from hardware.clock import Clock
@@ -14,22 +15,24 @@ class Hardware():
 
     def setup(self, memory_size = 20, clock_speed = 1, device_timings = []):
         self.__memory = Memory(memory_size)
+        self.__mmu = MMU(self.__memory)
+
         self.__interrupt_vector = InterruptVector()
 
         self.__io_devices = []
         for i in range(0, len(device_timings)):
             self.__io_devices.append(IODevice(i, device_timings[i], self.__interrupt_vector))
 
-        self.__cpu = Cpu(self.__memory, self.__interrupt_vector, len(self.__io_devices))
+        self.__cpu = Cpu(self.__mmu, self.__interrupt_vector, len(self.__io_devices))
 
         self.__clock = Clock(clock_speed)
         # The order in which the elements are added to the clock
         # is important, the CPU needs to be added first, as
         # some instructions may activate actions. This behavior
         # is taken into account in the IO devices.
-        self.__clock.add_subscriber(self.__cpu)
+        self.__clock.add_subscriber(self.__cpu, 30)
         for io in self.__io_devices:
-            self.__clock.add_subscriber(io)
+            self.__clock.add_subscriber(io, 15)
 
     @property
     def cpu(self):
@@ -40,6 +43,11 @@ class Hardware():
     def memory(self):
         """ Returns the hardware's memory. """
         return self.__memory
+
+    @property
+    def mmu(self):
+        """ Returns the hardware's mmu. """
+        return self.__mmu
 
     @property
     def io_devices(self):

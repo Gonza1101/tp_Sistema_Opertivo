@@ -20,7 +20,8 @@ class HardwareManagementCLIApp(Cmd):
     ############### END HARDWARE CONFIGURATION AND BEHAVIOR ########################
 
     ############### OS CONFIGURATION AND BEHAVIOR ########################
-    _scheduler_algorithm='FPPS'
+    _scheduler_algorithm='FCFS'
+    _allocation_algorithm = "FF"
     _quantum=1
     ############### END OS CONFIGURATION AND BEHAVIOR ########################
 
@@ -58,7 +59,7 @@ class HardwareManagementCLIApp(Cmd):
         )
 
         # Initialize the Operating System
-        self.os = Kernel(scheduling_strategy=self._scheduler_algorithm, quantum=self._quantum)
+        self.os = Kernel(scheduling_strategy=self._scheduler_algorithm, quantum=self._quantum, allocation_algorithm = self._allocation_algorithm)
 
         # The history helps us in visualizing how the
         # execution happened, is not part of the hardware nor
@@ -87,17 +88,18 @@ class HardwareManagementCLIApp(Cmd):
         self.do_history()
         
     def test_2(self):
-        self.do_load('p1', 2)
-        self.do_tick(2)
-        self.do_load('p2', 3)
-        self.do_tick(2)
-        self.do_load('p3', 3)
-        self.do_tick(2)
-        self.do_load('p4', 4)
-        self.do_tick(2)
-        self.do_load('p5', 1)
-        self.do_tick(12)
-        self.do_history()
+            self.do_load('p1', 2)
+            self.do_tick(2)
+            self.do_load('p2', 3)
+            self.do_tick(2)
+            self.do_load('p3', 3)
+            self.do_tick(2)
+            self.do_load('p4', 4)
+            self.do_tick(2)
+            self.do_load('p5', 1)
+            self.do_tick(12)
+            self.do_history()
+
         
     def do_quit(self, line = None):
         """ Exit the application. """

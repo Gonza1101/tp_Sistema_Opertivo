@@ -12,14 +12,14 @@ TERMINATED = "TERMINATED"
 class PCB:
     """Models a PCB"""
 
-    def __init__(self, pid, memory_start, memory_end, priority = 3, category = 'batch'):
+    def __init__(self, pid, memory_base, memory_limit, priority = 3, category = 'batch'):
         self.__pid = pid
         self.__state = NEW
-        self.__memory_start = memory_start
-        self.__memory_end = memory_end
-        self.__pc = memory_start
+        self.__memory_base = memory_base
+        self.__memory_limit = memory_limit
+        self.__pc = 0
         # For SJF, LJF, not used otherwise
-        self.__burst_time = self.__calculate_burst_time(memory_start, memory_end)
+        self.__burst_time = self.__calculate_burst_time(memory_base, memory_limit)
         # For SRTF, LRTF, not used otherwise
         self.__remaining_time = self.__burst_time
         # For FPPS, not used otherwise
@@ -43,20 +43,21 @@ class PCB:
         self.__state = value
 
     @property
-    def memory_start(self):
+    def memory_base(self):
         """
         Returns the initial memory position the
         associated program for this PCB is store at.
         """
-        return self.__memory_start
+        return self.__memory_base
 
     @property
-    def memory_end(self):
+    def memory_limit(self):
         """
         Returns the last memory position the
         associated program for this PCB is store at.
         """
-        return self.__memory_end
+        return self.__memory_limit
+    
 
     @property
     def pc(self):
@@ -87,13 +88,14 @@ class PCB:
     def remaining_time(self):
         """ Returns the remaining time of this PCB. """
         return self.__remaining_time
-
+    
     def recalculate_remaining_time(self):
         """ Recalculate and store the remaining time of this PCB. """
-        self.__remaining_time = self.__calculate_burst_time(self.__pc, self.__memory_end)
+        self.__remaining_time = self.__calculate_burst_time(self.__pc, self.__memory_limit)
 
     def __calculate_burst_time(self, from_addr, to_addr):
         """ Calculare the burst-time of the instruction from one memory position to the next"""
+
         cpu_instructions = [
             location
             for location in range(from_addr, to_addr)
@@ -105,7 +107,7 @@ class PCB:
         return Printer.tabulated([
             ["PID", self.__pid],
             ["State", self.__state],
-            ["M.Start", self.__memory_start],
-            ["M.End", self.__memory_end],
+            ["M.Start", self.__memory_base],
+            ["M.End", self.__memory_limit],
             ["PC", self.__pc]
         ])

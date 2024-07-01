@@ -37,6 +37,7 @@ class RRSchedulingAlgorithm(PreemptiveSchedulerAlgorithm):
             self.swap_queues()
             self.__ready_processes_queue.dequeue()
         
+        self.__ready_processes_queue.dequeue()
      
             
     def move_to_waiting(self, pid, pcb):

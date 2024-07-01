@@ -37,3 +37,8 @@ class PriorityQueue:
 
     def __repr__(self):
         return " <- ".join([str(e) for (p, i, e) in self.__data])
+    
+    def __iter__(self):
+        return [e for (p, i, e) in sorted(self.__data)].__iter__()
+    
+    

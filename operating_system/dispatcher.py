@@ -21,6 +21,8 @@ class Dispatcher:
         # to the corresponding registries in the CPU, so next tick will
         # run the process the PCB represents.
         HARDWARE.cpu.pc = pcb.pc
+        HARDWARE.mmu.baseDir = pcb.memory_base
+        HARDWARE.mmu.limit = pcb.memory_limit
 
     def save(self, pcb):
         """

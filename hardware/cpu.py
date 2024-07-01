@@ -8,14 +8,14 @@ from hardware.irq import IRQ
 class Cpu():
     """ Models the hardware"s CPU. """
 
-    def __init__(self, memory, interrupt_vector, number_of_io_devices):
+    def __init__(self, mmu, interrupt_vector, number_of_io_devices):
         """
-        The memory and interruption vectors should be known by the CPU.
+        The mmu and interruption vectors should be known by the CPU.
         Additionally, the number of IO devices should be known, as the be
         able to access a device randomly.
         """
         # Other hardware components
-        self.__memory = memory
+        self.__mmu = mmu
         self.__interrupt_vector = interrupt_vector
         self.__number_of_io_devices = number_of_io_devices
         # Registries
@@ -62,8 +62,8 @@ class Cpu():
 
     def __fetch(self):
         """Perform the Fetch part of a FDE cycle."""
-        self.__ir =  self.__memory.read(self.__pc) or ASM.NOOP()
-        self.__pc = (self.__pc + 1) % self.__memory.size
+        self.__ir =  self.__mmu.fetch(self.__pc) or ASM.NOOP()
+        self.__pc = self.__pc + 1
 
     def __decode(self):
         """Perform the Decode part of a FDE cycle."""
@@ -119,5 +119,7 @@ class Cpu():
     def __repr__(self):
         return Printer.tabulated([
             ["PC", self.__pc],
-            ["IR", self.__ir]
+            ["IR", self.__ir],
+            ["Base", self.__mmu.baseDir],
+            ["Limit", self.__mmu.limit]
         ])

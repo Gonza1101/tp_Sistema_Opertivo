@@ -1,6 +1,8 @@
 from threading import Thread
 from time import sleep
 
+from utilities.priority_queue import PriorityQueue
+
 class Clock():
     """
     Emulates a hardware clock.
@@ -9,30 +11,18 @@ class Clock():
     """
     def __init__(self, speed = 1):
         """ The speed of the code is expressed in ticks per second. Defaults to 1. """
-        self.__subscribers = []
+        self.__subscribers = PriorityQueue()
         self.__running = False
         self.__delay = 1 / speed
         self.__last_tick = 0
         self.__is_overclocked = False
 
-    def add_subscriber(self, subscriber, priority=None):
+    def add_subscriber(self, subscriber, priority=0):
         """
         Add a subscriber to this clock. The subscriber will get
         notified each time the clock ticks.
         """
-        # This allows to register an element with higher priority than others
-        # If no priority i given, just add at the end
-        if (priority == None):
-            self.__subscribers.append(subscriber)
-        else:
-            # If priority is given, lower priority means receiving the
-            # notification first. So 0 is the lowest. The priority is
-            # actually the index in which to insert the subscriber.
-            # This useful as sometimes we want to be sure that the
-            # subscriber gets notified before something happens, such as
-            # the history, which requires to register data before the
-            # actual tick's execution.
-            self.__subscribers.insert(priority, subscriber)
+        self.__subscribers.enqueue(subscriber, priority)
 
     def stop(self):
         """ Stop the clock. """

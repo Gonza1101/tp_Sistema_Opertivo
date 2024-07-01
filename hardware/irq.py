@@ -18,12 +18,17 @@ class IRQ:
     def KILL(self):
         """ Return an interruption for the KILL code. """
         return IRQ(KILL_IRQ, [])
-
+    """
     @classmethod
-    def NEW(self, program,priority):
+    def NEW(self, program, priority):
+         Return an interruption for the NEW code. 
+        return IRQ(NEW_IRQ, [program, priority])
+    """
+    @classmethod
+    def NEW(self, program, priority=0):
         """ Return an interruption for the NEW code. """
-        return IRQ(NEW_IRQ, [program,priority])
-
+        return IRQ(NEW_IRQ, [program, priority])
+    
     @classmethod
     def IO_IN(self, device):
         """ Return an interruption for the IO_IN code for the given device. """
